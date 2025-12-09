@@ -542,12 +542,18 @@ with tab_energy_mix:
                 mode='lines', name='Fossil Fuels', stackgroup='one', fillcolor='rgba(158, 158, 158, 0.8)'
             ))
             
+            template_map = {
+                "Default": "plotly",
+                "Dark": "plotly_dark",
+                "Light": "plotly_white",  # note: 'plotly_white', not 'plotly_light'
+            }
+            
             fig_stacked.update_layout(
                 title="Energy Mix Evolution (Stacked %)",
                 xaxis_title="Year",
                 yaxis_title="Share of Electricity (%)",
                 hovermode='x unified',
-                template='plotly' if chart_style == 'Default' else f'plotly_{chart_style.lower()}',
+                template=template_map.get(chart_style, "plotly"),
                 height=500
             )
             
@@ -580,7 +586,7 @@ with tab_energy_mix:
             xaxis_title="Year",
             yaxis_title="Share of Electricity (%)",
             hovermode='x unified',
-            template='plotly' if chart_style == 'Default' else f'plotly_{chart_style.lower()}',
+            template=template_map.get(chart_style, "plotly"),
             height=500
         )
         
@@ -613,7 +619,7 @@ with tab_renewable:
                 title="Total Renewable Energy Share",
                 xaxis_title="Year",
                 yaxis_title="Share (%)",
-                template='plotly' if chart_style == 'Default' else f'plotly_{chart_style.lower()}',
+                template=template_map.get(chart_style, "plotly"),
                 height=450
             )
             
@@ -669,7 +675,7 @@ with tab_economic:
             )
             
             fig_gdp.update_yaxes(tickformat='$,.0f')
-            fig_gdp.update_layout(height=400, template='plotly' if chart_style == 'Default' else f'plotly_{chart_style.lower()}')
+            fig_gdp.update_layout(height=400, template=template_map.get(chart_style, "plotly"))
             
             st.plotly_chart(fig_gdp, use_container_width=True)
         else:
@@ -689,7 +695,7 @@ with tab_economic:
                 color_continuous_scale='Greens'
             )
             
-            fig_access.update_layout(height=400, template='plotly' if chart_style == 'Default' else f'plotly_{chart_style.lower()}')
+            fig_access.update_layout(height=400, template=template_map.get(chart_style, "plotly"))
             
             st.plotly_chart(fig_access, use_container_width=True)
         else:
@@ -741,7 +747,7 @@ with tab_live:
             )
             
             fig_solar.update_traces(fill='tozeroy')
-            fig_solar.update_layout(height=400, template='plotly' if chart_style == 'Default' else f'plotly_{chart_style.lower()}')
+            fig_solar.update_layout(height=400, template=template_map.get(chart_style, "plotly"))
             
             st.plotly_chart(fig_solar, use_container_width=True)
             
