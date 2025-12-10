@@ -9,6 +9,9 @@ from datetime import datetime, timedelta
 import logging
 import sys
 import os
+from src.map_visualizations import InterconnectionMapper, RegionalMapBuilder
+import streamlit_folium as stf
+
 
 # Add src directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -76,6 +79,7 @@ page = st.sidebar.radio(
         "Bilateral Trade Analysis",
         "Technical Metrics",
         "Economic Indicators",
+        "Energy Interconnections Map",
         "News & Updates",
         "Data Export",
         "Cache Status"
@@ -490,6 +494,147 @@ elif page == "Economic Indicators":
         econ_filtered[display_cols].sort_values('date', ascending=False),
         use_container_width=True
     )
+
+# ============================
+# ENERGY INTERCONNECTIONS MAP
+# ============================
+elif page == "Energy Interconnections Map":
+    st.title("🗺️ Global Energy Interconnections Map")
+    
+    # Map type selection
+    col1, col2 = st.columns([1, 3])
+    
+    with col1:
+        map_type = st.selectbox(
+            "Select Map Type",
+            ["Global Network", "Trade Flows", "Renewable Penetration", "Grid Capacity", 
+             "South Asia", "ASEAN"]
+        )
+    
+    st.markdown("---")
+    
+    # Load data
+    @st.cache_data(ttl=3600)
+    def load_map_data():
+        collector = st.session_state.data_collector
+        return (
+            collector.get_bilateral_trade_data(),
+            collector.get_technical_metrics(),
+            collector.get_economic_indicators()
+        )
+    
+    trade_df, tech_df, econ_df = load_map_data()
+    
+    # Generate maps based on selection
+    mapper = InterconnectionMapper()
+    
+    if map_type == "Global Network":
+        st.subheader("Global Energy Interconnections Network")
+        st.write("Shows all ISA member countries and major cross-border energy interconnections.")
+        
+        countries = list(config.ISA_MEMBER_COUNTRIES.keys())
+
+        # Convert (exporter, importer) to (exporter, importer, capacity_mw)
+        connections = [
+            (exp, imp, 1000)   # use 1000 MW or any default you like
+            for (exp, imp) in config.BILATERAL_TRADE_PAIRS
+        ]
+
+        m = mapper.create_interconnection_network_map(countries, connections)
+        stf.folium_static(m, width=1200, height=700)
+    
+    elif map_type == "Trade Flows":
+        st.subheader("Cross-Border Electricity Trade Flows")
+        st.write("Visualizes bilateral electricity trade flows between countries. Line thickness represents trade volume.")
+        
+        # Get latest trade data
+        latest_trade = trade_df.sort_values('date').drop_duplicates(['exporter', 'importer'], keep='last')
+        
+        m = mapper.create_trade_flow_map(latest_trade)
+        stf.folium_static(m, width=1200, height=700)
+        
+        # Show statistics
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Trade Corridors", len(latest_trade))
+        with col2:
+            st.metric("Total Volume (TWh)", f"{latest_trade['trade_volume_twh'].sum():.2f}")
+        with col3:
+            st.metric("Total Trade Value (USD B)", f"{latest_trade['trade_value_usd_million'].sum()/1000:.2f}")
+    
+    elif map_type == "Renewable Penetration":
+        st.subheader("Renewable Energy Penetration Heatmap")
+        st.write("Intensity of color shows renewable energy penetration percentage. Darker red = lower, green = higher penetration.")
+        
+        m = mapper.create_renewable_penetration_map(tech_df)
+        stf.folium_static(m, width=1200, height=700)
+        
+        # Show details
+        latest_tech = tech_df.sort_values('date').drop_duplicates('country', keep='last')
+        top_renewable = latest_tech.nlargest(5, 'renewable_penetration_pct')[['country', 'renewable_penetration_pct']]
+        
+        st.subheader("Top 5 Countries by Renewable Penetration")
+        for idx, row in top_renewable.iterrows():
+            st.write(f"🌱 **{row['country']}**: {row['renewable_penetration_pct']:.1f}%")
+    
+    elif map_type == "Grid Capacity":
+        st.subheader("Grid Capacity Distribution")
+        st.write("Circle size represents grid capacity. Larger circles = higher capacity (MW).")
+        
+        m = mapper.create_grid_capacity_map(tech_df)
+        stf.folium_static(m, width=1200, height=700)
+        
+        # Show top capacities
+        latest_tech = tech_df.sort_values('date').drop_duplicates('country', keep='last')
+        top_capacity = latest_tech.nlargest(5, 'grid_capacity_mw')[['country', 'grid_capacity_mw']]
+        
+        st.subheader("Top 5 Countries by Grid Capacity")
+        for idx, row in top_capacity.iterrows():
+            st.write(f"⚡ **{row['country']}**: {row['grid_capacity_mw']:,.0f} MW")
+    
+    elif map_type == "South Asia":
+        st.subheader("South Asia Cross-Border Energy Network")
+        st.write("Focus on India, Nepal, Bhutan, Bangladesh, and Pakistan interconnections.")
+        
+        south_asia_trade = trade_df[
+            (trade_df['exporter'].isin(['India', 'Nepal', 'Bhutan', 'Bangladesh', 'Pakistan'])) &
+            (trade_df['importer'].isin(['India', 'Nepal', 'Bhutan', 'Bangladesh', 'Pakistan']))
+        ]
+        
+        m = RegionalMapBuilder.create_south_asia_map(south_asia_trade)
+        stf.folium_static(m, width=1200, height=700)
+        
+        # Statistics
+        if not south_asia_trade.empty:
+            st.subheader("South Asia Trade Summary")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Trade Corridors", len(south_asia_trade.drop_duplicates(['exporter', 'importer'])))
+            with col2:
+                st.metric("Total Volume (TWh)", f"{south_asia_trade['trade_volume_twh'].sum():.2f}")
+    
+    elif map_type == "ASEAN":
+        st.subheader("ASEAN Cross-Border Energy Network")
+        st.write("Focus on Southeast Asia interconnections including Thailand, Laos, Vietnam, Malaysia, Singapore, Indonesia, and Philippines.")
+        
+        asean_countries = ['Thailand', 'Laos', 'Vietnam', 'Malaysia', 'Singapore', 'Indonesia', 'Philippines']
+        asean_trade = trade_df[
+            (trade_df['exporter'].isin(asean_countries)) &
+            (trade_df['importer'].isin(asean_countries))
+        ]
+        
+        m = RegionalMapBuilder.create_asean_map(asean_trade)
+        stf.folium_static(m, width=1200, height=700)
+        
+        # Statistics
+        if not asean_trade.empty:
+            st.subheader("ASEAN Trade Summary")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Trade Corridors", len(asean_trade.drop_duplicates(['exporter', 'importer'])))
+            with col2:
+                st.metric("Total Volume (TWh)", f"{asean_trade['trade_volume_twh'].sum():.2f}")
+
 
 # ============================
 # NEWS & UPDATES
