@@ -17,6 +17,8 @@ from .data_collector import DataCollector
 from .web_crawler import WebCrawler
 from .data_processor import DataProcessor, EnergyMetricsCalculator, TradeAnalytics
 from .visualizations import EnergyVisualizations, GridVisualizationUtils
+from .map_visualizations import InterconnectionMapper, RegionalMapBuilder
+
 
 __version__ = "1.0.0"
 __author__ = "M.Tech Renewable Energy Student"
@@ -32,4 +34,6 @@ __all__ = [
     "TradeAnalytics",
     "EnergyVisualizations",
     "GridVisualizationUtils",
+    "InterconnectionMapper",
+    "RegionalMapBuilder",
 ]
