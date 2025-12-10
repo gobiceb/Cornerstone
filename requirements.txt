@@ -1,0 +1,51 @@
+# requirements.txt - All Python Dependencies
+
+# Core Framework
+streamlit==1.28.1
+streamlit-option-menu==0.3.6
+streamlit-lottie==0.0.5
+
+# Data Processing & Analysis
+
+# Web Scraping
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
+feedparser==6.0.10
+textblob==0.17.1
+
+# Data Visualization
+plotly==5.16.1
+seaborn==0.12.2
+folium==0.14.0
+streamlit-folium==0.17.0
+
+# APIs & Data Sources
+yfinance==0.2.30
+alpha-vantage==2.3.1
+
+# Database & Caching
+redis==5.0.0  # Optional for distributed caching
+
+# Data Export
+openpyxl==3.1.2
+reportlab==4.0.4
+pdfkit==1.0.0
+
+# Utilities & Logging
+python-dotenv==1.0.0
+pytz==2023.3
+croniter==1.4.1
+schedule==1.2.0
+
+# Testing
+pytest==7.4.0
+pytest-mock==3.11.1
+
+# Sentiment Analysis
+nltk==3.8.1
+
+# Date/Time
+python-dateutil==2.8.2
+
+# Performance
